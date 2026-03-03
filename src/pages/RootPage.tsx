@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginWithToken, refreshAccessToken } from '../lib/authApi';
+import {
+  loginWithToken,
+  refreshAccessToken,
+  hasPermission,
+  NEWCOMER_PERMISSION,
+} from '../lib/authApi';
 
 type CheckState = 'idle' | 'checking' | 'success' | 'error';
 
@@ -54,9 +59,16 @@ export function RootPage() {
       try {
         const userData = await loginWithToken(accessToken);
         if (cancelled) return;
+
+        if (!hasPermission(userData.permissions, NEWCOMER_PERMISSION)) {
+          clearTokens();
+          setState('error');
+          setMessage('권한이 없습니다');
+          return;
+        }
+
         localStorage.setItem('userData', JSON.stringify(userData));
-        setState('success');
-        setMessage('자동 로그인에 성공했습니다.');
+        navigate('/register', { replace: true });
         return;
       } catch {
         if (!refreshToken || !storage) {
@@ -82,10 +94,16 @@ export function RootPage() {
 
         const userData = await loginWithToken(refreshed.accessToken);
         if (cancelled) return;
-        localStorage.setItem('userData', JSON.stringify(userData));
 
-        setState('success');
-        setMessage('토큰을 갱신하고 자동 로그인에 성공했습니다.');
+        if (!hasPermission(userData.permissions, NEWCOMER_PERMISSION)) {
+          clearTokens();
+          setState('error');
+          setMessage('권한이 없습니다');
+          return;
+        }
+
+        localStorage.setItem('userData', JSON.stringify(userData));
+        navigate('/register', { replace: true });
       } catch (err) {
         if (cancelled) return;
         clearTokens();
@@ -114,10 +132,9 @@ export function RootPage() {
         </h1>
         <p className="mb-2 text-center text-sm text-[#7f9470]">
           {state === 'checking' && '자동 로그인 중입니다...'}
-          {state === 'success' && (message ?? '로그인되었습니다.')}
         </p>
         {state === 'error' && message ? (
-          <p className="text-center text-xs text-red-500">{message}</p>
+          <p className="text-center text-sm font-medium text-red-500">{message}</p>
         ) : null}
       </div>
     </div>

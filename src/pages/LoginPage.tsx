@@ -1,7 +1,12 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { loginWithCredentials, loginWithToken } from '../lib/authApi';
+import {
+  loginWithCredentials,
+  loginWithToken,
+  hasPermission,
+  NEWCOMER_PERMISSION,
+} from '../lib/authApi';
 
 function storeTokens(
   accessToken: string,
@@ -39,9 +44,14 @@ export function LoginPage() {
       storeTokens(accessToken, refreshToken, { autoLogin });
 
       const userData = await loginWithToken(accessToken);
-      localStorage.setItem('userData', JSON.stringify(userData));
 
-      navigate('/', { replace: true });
+      if (!hasPermission(userData.permissions, NEWCOMER_PERMISSION)) {
+        setError('권한이 없습니다');
+        return;
+      }
+
+      localStorage.setItem('userData', JSON.stringify(userData));
+      navigate('/register', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {

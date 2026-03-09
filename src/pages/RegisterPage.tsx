@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { useExitAnimation } from '../lib/animation';
 import { registerNewcomers, type NewcomerPayload } from '../lib/newcomerApi';
 
 /* ── 타입 ── */
@@ -76,9 +77,45 @@ const INITIAL_ROW_COUNT = 3;
 
 export function RegisterPage() {
   const [rows, setRows] = useState<NewcomerRow[]>(() => createInitialRows(INITIAL_ROW_COUNT));
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const exitAnim = useExitAnimation({
+    onComplete: (id) => {
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    },
+  });
+
+  /* ── 선택 ── */
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelected((prev) => {
+      const visibleIds = rows.filter((r) => !exitAnim.isExiting(r.id)).map((r) => r.id);
+      const allSelected = visibleIds.length > 0 && visibleIds.every((id) => prev.has(id));
+      return allSelected ? new Set<string>() : new Set(visibleIds);
+    });
+  }, [rows, exitAnim]);
+
+  const isAllSelected = (() => {
+    const visibleIds = rows.filter((r) => !exitAnim.isExiting(r.id)).map((r) => r.id);
+    return visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+  })();
 
   /* ── 행 조작 ── */
 
@@ -96,27 +133,33 @@ export function RegisterPage() {
       if (row && hasData(row)) {
         setDeleteTarget(id);
       } else {
-        setRows((prev) => prev.filter((r) => r.id !== id));
+        exitAnim.trigger([id]);
       }
     },
-    [rows],
+    [rows, exitAnim],
   );
 
   const confirmRemove = useCallback(() => {
     if (!deleteTarget) return;
-    setRows((prev) => prev.filter((r) => r.id !== deleteTarget));
+    exitAnim.trigger([deleteTarget]);
     setDeleteTarget(null);
-  }, [deleteTarget]);
+  }, [deleteTarget, exitAnim]);
 
-  /* ── 등록 ── */
+  /* ── 선택 등록 ── */
 
   const handleSubmit = async () => {
     setSubmitError(null);
 
-    const filledRows = rows.filter((r) => r.name.trim() !== '');
+    const selectedRows = rows.filter((r) => selected.has(r.id) && !exitAnim.isExiting(r.id));
 
+    if (selectedRows.length === 0) {
+      setSubmitError('등록할 행을 선택해 주세요.');
+      return;
+    }
+
+    const filledRows = selectedRows.filter((r) => r.name.trim() !== '');
     if (filledRows.length === 0) {
-      setSubmitError('등록할 새가족 정보를 입력해 주세요.');
+      setSubmitError('선택된 행에 이름을 입력해 주세요.');
       return;
     }
 
@@ -142,7 +185,7 @@ export function RegisterPage() {
     setSubmitting(true);
     try {
       await registerNewcomers(payload);
-      setRows(createInitialRows(INITIAL_ROW_COUNT));
+      exitAnim.trigger(filledRows.map((r) => r.id));
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : '등록에 실패했습니다.');
     } finally {
@@ -152,15 +195,36 @@ export function RegisterPage() {
 
   /* ── 렌더 ── */
 
+  const visibleRows = rows.filter((r) => !exitAnim.isExiting(r.id));
+  const selectedCount = visibleRows.filter((r) => selected.has(r.id)).length;
+
   return (
     <div className="flex h-full flex-col">
       {/* 페이지 제목 */}
-      <h1 className="mb-4 text-lg font-semibold text-gray-800">새가족 등록</h1>
+      <h1 className="mb-3 text-lg font-semibold text-gray-800">새가족 등록</h1>
+
+      {/* 전체 선택 바 */}
+      <div className="mb-2 flex items-center gap-3">
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600 select-none">
+          <input
+            type="checkbox"
+            checked={isAllSelected}
+            onChange={toggleSelectAll}
+            className="h-4 w-4 rounded border-gray-300 text-[#3d8b6e] focus:ring-[#3d8b6e]/30"
+          />
+          전체 선택
+        </label>
+        {selectedCount > 0 && (
+          <span className="text-xs text-gray-400">{selectedCount}건 선택됨</span>
+        )}
+      </div>
 
       {/* 테이블 영역 */}
       <div className="flex-1 overflow-x-auto rounded-lg border border-gray-200 bg-white">
         {/* 헤더 */}
         <div className="flex items-center border-b border-gray-200 bg-[#f5f7fa] px-4 py-2.5">
+          {/* 체크박스 열 */}
+          <span className="w-10 shrink-0" />
           {COLUMNS.map((col) => (
             <span
               key={col.key}
@@ -178,8 +242,19 @@ export function RegisterPage() {
           {rows.map((row) => (
             <div
               key={row.id}
-              className="flex items-center px-4 py-2 transition-colors hover:bg-gray-50/60"
+              className="flex items-center px-4 py-2 transition-all hover:bg-gray-50/60"
+              style={exitAnim.getStyle(row.id)}
             >
+              {/* 체크박스 */}
+              <div className="w-10 shrink-0 flex items-center justify-center">
+                <input
+                  type="checkbox"
+                  checked={selected.has(row.id)}
+                  onChange={() => toggleSelect(row.id)}
+                  className="h-4 w-4 rounded border-gray-300 text-[#3d8b6e] focus:ring-[#3d8b6e]/30"
+                />
+              </div>
+
               {/* 이름 */}
               <div className={`${COLUMNS[0].width} shrink-0 px-1`}>
                 <input
@@ -282,7 +357,7 @@ export function RegisterPage() {
         </div>
 
         {/* 행이 하나도 없을 때 */}
-        {rows.length === 0 && (
+        {visibleRows.length === 0 && (
           <div className="flex items-center justify-center py-10 text-sm text-gray-400">
             등록할 행이 없습니다. 아래 버튼으로 행을 추가하세요.
           </div>
@@ -300,10 +375,10 @@ export function RegisterPage() {
           {submitError && <p className="text-xs text-red-500">{submitError}</p>}
           <Button
             className="h-10 rounded-lg bg-[#3d8b6e] px-6 text-sm font-medium text-white shadow-sm hover:bg-[#34765d]"
-            disabled={submitting}
+            disabled={submitting || selectedCount === 0}
             onClick={handleSubmit}
           >
-            {submitting ? '등록 중…' : '등록'}
+            {submitting ? '등록 중…' : `선택 등록 (${selectedCount})`}
           </Button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { OrganizationModal } from '../components/OrganizationModal';
 import { useExitAnimation } from '../lib/animation';
 import { registerNewcomers, type NewcomerPayload } from '../lib/newcomerApi';
 
@@ -79,6 +80,7 @@ export function RegisterPage() {
   const [rows, setRows] = useState<NewcomerRow[]>(() => createInitialRows(INITIAL_ROW_COUNT));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [orgModalTarget, setOrgModalTarget] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -324,17 +326,18 @@ export function RegisterPage() {
               {/* 소속 */}
               <div className={`${COLUMNS[4].width} shrink-0 px-1`}>
                 <div className="flex items-center gap-1.5">
-                  <span className="flex-1 truncate rounded-md border border-gray-200 bg-gray-50 px-2.5 py-[7px] text-sm text-gray-400">
+                  <span
+                    className={`flex-1 truncate rounded-md border border-gray-200 px-2.5 py-[7px] text-sm ${
+                      row.organizationName ? 'bg-white text-gray-700' : 'bg-gray-50 text-gray-400'
+                    }`}
+                  >
                     {row.organizationName || '미선택'}
                   </span>
-                  {/* TODO: 소속 검색 모달 연결 */}
                   <Button
                     variant="outline"
                     size="sm"
                     className="h-9 shrink-0 px-3 text-xs"
-                    onClick={() => {
-                      // TODO: 소속 검색 모달 열기
-                    }}
+                    onClick={() => setOrgModalTarget(row.id)}
                   >
                     검색
                   </Button>
@@ -389,6 +392,17 @@ export function RegisterPage() {
           message="데이터가 있습니다. 그래도 삭제할까요?"
           onConfirm={confirmRemove}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {/* 소속 검색 모달 */}
+      {orgModalTarget !== null && (
+        <OrganizationModal
+          onSelect={(id, name) => {
+            updateRow(orgModalTarget, { organizationId: id, organizationName: name });
+            setOrgModalTarget(null);
+          }}
+          onClose={() => setOrgModalTarget(null)}
         />
       )}
     </div>

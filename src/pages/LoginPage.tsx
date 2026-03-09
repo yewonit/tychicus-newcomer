@@ -1,29 +1,19 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import {
   loginWithCredentials,
   loginWithToken,
+  refreshAccessToken,
   hasPermission,
   NEWCOMER_PERMISSION,
 } from '../lib/authApi';
 
-function storeTokens(
-  accessToken: string,
-  refreshToken: string,
-  options: { autoLogin: boolean },
-) {
-  if (options.autoLogin) {
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('autoLogin', 'true');
-    sessionStorage.removeItem('accessToken');
-    sessionStorage.removeItem('refreshToken');
-  } else {
-    sessionStorage.setItem('accessToken', accessToken);
-    sessionStorage.setItem('refreshToken', refreshToken);
-    localStorage.removeItem('autoLogin');
-  }
+function clearTokens() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('autoLogin');
+  localStorage.removeItem('userData');
 }
 
 export function LoginPage() {
@@ -34,6 +24,73 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Step 1 + 2-1: 페이지 진입 시 자동 로그인 시도.
+   * localStorage에 토큰이 있고 autoLogin 플래그가 true일 때만 실행한다.
+   *
+   * 흐름:
+   *   loginWithToken(accessToken)
+   *     → 성공: 권한 확인 → /register
+   *     → 실패: refreshAccessToken(refreshToken)
+   *       → 성공: 새 토큰 저장 → /register
+   *       → 실패: 토큰 전부 삭제 → /login 유지
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    async function tryAutoLogin() {
+      const storedAccess = localStorage.getItem('accessToken');
+      const storedRefresh = localStorage.getItem('refreshToken');
+      const isAutoLogin = localStorage.getItem('autoLogin') === 'true';
+
+      if (!storedAccess || !storedRefresh || !isAutoLogin) return;
+
+      setLoading(true);
+
+      try {
+        const userData = await loginWithToken(storedAccess);
+        if (cancelled) return;
+
+        if (!hasPermission(userData.permissions, NEWCOMER_PERMISSION)) {
+          clearTokens();
+          setError('권한이 없습니다');
+          setLoading(false);
+          return;
+        }
+
+        localStorage.setItem('userData', JSON.stringify(userData));
+        navigate('/register', { replace: true });
+        return;
+      } catch {
+        if (cancelled) return;
+      }
+
+      try {
+        const refreshed = await refreshAccessToken(storedRefresh);
+        if (cancelled) return;
+
+        localStorage.setItem('accessToken', refreshed.accessToken);
+        localStorage.setItem('refreshToken', refreshed.refreshToken);
+
+        navigate('/register', { replace: true });
+      } catch {
+        if (cancelled) return;
+        clearTokens();
+        setLoading(false);
+      }
+    }
+
+    void tryAutoLogin();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  /**
+   * Step 2-2: 폼 제출 — credential 로그인.
+   * loginWithCredentials로 토큰을 받아오고,
+   * 자동로그인이 체크되어 있으면 토큰을 localStorage에 저장한 뒤 /register로 이동한다.
+   */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -41,16 +98,13 @@ export function LoginPage() {
 
     try {
       const { accessToken, refreshToken } = await loginWithCredentials(email, password);
-      storeTokens(accessToken, refreshToken, { autoLogin });
 
-      const userData = await loginWithToken(accessToken);
-
-      if (!hasPermission(userData.permissions, NEWCOMER_PERMISSION)) {
-        setError('권한이 없습니다');
-        return;
+      if (autoLogin) {
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('autoLogin', 'true');
       }
 
-      localStorage.setItem('userData', JSON.stringify(userData));
       navigate('/register', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
@@ -124,4 +178,3 @@ export function LoginPage() {
     </div>
   );
 }
-

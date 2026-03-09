@@ -178,7 +178,7 @@ export function RegisterPage() {
 
     const payload: NewcomerPayload[] = filledRows.map((r) => ({
       name: r.name.trim(),
-      gender: r.gender as '남' | '여',
+      gender: r.gender as 'M' | 'F',
       birthDay: r.birthDay,
       phone: r.phoneUnknown ? '' : r.phone,
       organizationId: r.organizationId,
@@ -280,8 +280,8 @@ export function RegisterPage() {
                   <option value="" disabled>
                     선택
                   </option>
-                  <option value="남">남</option>
-                  <option value="여">여</option>
+                  <option value="M">남</option>
+                  <option value="F">여</option>
                 </select>
               </div>
 

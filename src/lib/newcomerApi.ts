@@ -2,7 +2,7 @@ import { request } from './apiClient';
 
 export type NewcomerPayload = {
   name: string;
-  gender: '남' | '여';
+  gender: 'M' | 'F';
   birthDay: string;
   phone: string;
   organizationId: number | null;

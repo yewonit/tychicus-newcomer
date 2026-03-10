@@ -1,4 +1,7 @@
-export const BASE_URL = 'https://attendance.icoramdeo.com';
+export const BASE_URL =
+  import.meta.env.MODE === 'development'
+    ? 'https://attendance-dev.icoramdeo.com'
+    : 'https://attendance.icoramdeo.com';
 
 /** 저장된 액세스 토큰을 가져온다 (localStorage → sessionStorage 순서). */
 export function getAccessToken(): string | null {

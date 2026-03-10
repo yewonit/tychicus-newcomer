@@ -10,7 +10,7 @@ import { registerNewcomers, type NewcomerPayload } from '../lib/newcomerApi';
 type NewcomerRow = {
   id: string;
   name: string;
-  gender: '' | '남' | '여';
+  gender: '' | 'M' | 'F';
   birthDay: string;
   phone: string;
   phoneUnknown: boolean;

@@ -51,6 +51,24 @@ function formatOrgName(name: string | null): string {
   return name ? name.replace(/_/g, ' ') : '';
 }
 
+export type UpdateMemberPayload = {
+  name: string;
+  gender: 'M' | 'F';
+  birthDay: string;
+  phone: string;
+  organizationId: number | null;
+};
+
+/** 새가족 정보를 수정한다. */
+export async function updateMember(userId: number, data: UpdateMemberPayload): Promise<unknown> {
+  return request({
+    method: 'PUT',
+    path: `/api/users/${userId}`,
+    body: { userData: data },
+    fallbackError: '수정에 실패했습니다.',
+  });
+}
+
 /** 최근 새가족 목록을 조회한다. */
 export async function fetchNewMembers(): Promise<NewMember[]> {
   const res = await request<NewMembersResponse>({

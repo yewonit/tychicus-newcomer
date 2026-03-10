@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { EditMemberModal } from '../components/EditMemberModal';
 import { fetchNewMembers, type NewMember } from '../lib/newMemberApi';
 
 /* ── 컬럼 정의 ── */
@@ -16,6 +17,7 @@ export function UpdateRecentPage() {
   const [members, setMembers] = useState<NewMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editTarget, setEditTarget] = useState<NewMember | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,9 +108,7 @@ export function UpdateRecentPage() {
                 <div className="w-10 shrink-0 pl-1">
                   <button
                     type="button"
-                    onClick={() => {
-                      // TODO: 수정 모달 열기
-                    }}
+                    onClick={() => setEditTarget(member)}
                     className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-[#e8f5bd] hover:text-[#3d8b6e]"
                     aria-label="수정"
                   >
@@ -120,6 +120,19 @@ export function UpdateRecentPage() {
           </div>
         )}
       </div>
+
+      {/* 수정 모달 */}
+      {editTarget && (
+        <EditMemberModal
+          member={editTarget}
+          onSaved={(updated) => {
+            setMembers((prev) =>
+              prev.map((m) => (m.userId === updated.userId ? updated : m)),
+            );
+          }}
+          onClose={() => setEditTarget(null)}
+        />
+      )}
     </div>
   );
 }

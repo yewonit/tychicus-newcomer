@@ -1,0 +1,44 @@
+name: Deploy to main machine
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build Docker Image (production mode)
+        run: |
+          docker buildx build --build-arg BUILD_MODE=production -t ${{ secrets.DOCKER_HUB_USERNAME }}/tychicus-newcomer:prod --platform linux/amd64 .
+
+      - name: Push Docker Image to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/tychicus-newcomer:prod
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.AWS_SSH_FRONTEND_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Docker Swarm on AWS EC2
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.AWS_SSH_USER }}@${{ secrets.AWS_SSH_FRONTEND_HOST }} << 'EOF'
+            cd ~/src/deployment/ec2-deploy/frontend
+            docker compose pull tychicus-newcomer-prod
+            docker compose up -d tychicus-newcomer-prod
+            docker image prune -f
+          EOF

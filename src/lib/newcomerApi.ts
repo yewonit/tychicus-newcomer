@@ -3,7 +3,7 @@ import { request } from './apiClient';
 export type NewcomerPayload = {
   name: string;
   gender: 'M' | 'F';
-  birthDay: string;
+  birthDate: string;
   phone: string;
   organizationId: number | null;
 };

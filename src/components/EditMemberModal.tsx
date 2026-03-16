@@ -38,7 +38,7 @@ export function EditMemberModal({ member, onSaved, onClose }: EditMemberModalPro
   const [visible, setVisible] = useState(false);
   const [name, setName] = useState(member.name);
   const [gender, setGender] = useState<'M' | 'F'>(toGenderCode(member.gender));
-  const [birthDay, setBirthDay] = useState(member.birthDate);
+  const [birthDate, setBirthDate] = useState(member.birthDate);
   const [phone, setPhone] = useState(member.phoneNumber);
   const [phoneUnknown, setPhoneUnknown] = useState(false);
   const [orgId, setOrgId] = useState<number | null>(member.organizationId);
@@ -79,7 +79,7 @@ export function EditMemberModal({ member, onSaved, onClose }: EditMemberModalPro
     const payload: UpdateMemberPayload = {
       name: name.trim(),
       gender,
-      birthDay,
+      birthDate,
       phone: phoneUnknown ? '' : phone,
       organizationId: orgId,
     };
@@ -91,7 +91,7 @@ export function EditMemberModal({ member, onSaved, onClose }: EditMemberModalPro
         ...member,
         name: payload.name,
         gender: toGenderLabel(payload.gender),
-        birthDate: payload.birthDay,
+        birthDate: payload.birthDate,
         phoneNumber: payload.phone,
         organizationId: payload.organizationId,
         organizationName: orgName,
@@ -165,8 +165,8 @@ export function EditMemberModal({ member, onSaved, onClose }: EditMemberModalPro
               <label className="mb-1 block text-xs font-medium text-gray-500">생일</label>
               <input
                 type="date"
-                value={birthDay}
-                onChange={(e) => setBirthDay(e.target.value)}
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
                 className={inputClass}
               />
             </div>

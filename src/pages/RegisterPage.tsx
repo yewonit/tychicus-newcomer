@@ -11,7 +11,7 @@ type NewcomerRow = {
   id: string;
   name: string;
   gender: '' | 'M' | 'F';
-  birthDay: string;
+  birthDate: string;
   phone: string;
   phoneUnknown: boolean;
   organizationId: number | null;
@@ -27,7 +27,7 @@ function createRow(): NewcomerRow {
     id: String(nextId),
     name: '',
     gender: '',
-    birthDay: '',
+    birthDate: '',
     phone: '',
     phoneUnknown: false,
     organizationId: null,
@@ -56,7 +56,7 @@ function hasData(row: NewcomerRow): boolean {
   return (
     row.name.trim() !== '' ||
     row.gender !== '' ||
-    row.birthDay !== '' ||
+    row.birthDate !== '' ||
     row.phone !== '' ||
     row.organizationId !== null
   );
@@ -67,7 +67,7 @@ function hasData(row: NewcomerRow): boolean {
 const COLUMNS = [
   { key: 'name', label: '이름', width: 'w-[130px]' },
   { key: 'gender', label: '성별', width: 'w-[90px]' },
-  { key: 'birthDay', label: '생일', width: 'w-[150px]' },
+  { key: 'birthDate', label: '생일', width: 'w-[150px]' },
   { key: 'phone', label: '핸드폰번호', width: 'w-[260px]' },
   { key: 'organization', label: '소속', width: 'w-[170px]' },
 ] as const;
@@ -179,7 +179,7 @@ export function RegisterPage() {
     const payload: NewcomerPayload[] = filledRows.map((r) => ({
       name: r.name.trim(),
       gender: r.gender as 'M' | 'F',
-      birthDay: r.birthDay,
+      birthDate: r.birthDate,
       phone: r.phoneUnknown ? '' : r.phone,
       organizationId: r.organizationId,
     }));
@@ -289,8 +289,8 @@ export function RegisterPage() {
               <div className={`${COLUMNS[2].width} shrink-0 px-1`}>
                 <input
                   type="date"
-                  value={row.birthDay}
-                  onChange={(e) => updateRow(row.id, { birthDay: e.target.value })}
+                  value={row.birthDate}
+                  onChange={(e) => updateRow(row.id, { birthDate: e.target.value })}
                   className="h-9 w-full rounded-md border border-gray-200 bg-white px-2.5 text-sm text-gray-700 focus:border-[#3d8b6e] focus:outline-none focus:ring-1 focus:ring-[#3d8b6e]/30"
                 />
               </div>

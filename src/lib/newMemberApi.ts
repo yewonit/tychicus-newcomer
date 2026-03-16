@@ -54,7 +54,7 @@ function formatOrgName(name: string | null): string {
 export type UpdateMemberPayload = {
   name: string;
   gender: 'M' | 'F';
-  birthDay: string;
+  birthDate: string;
   phone: string;
   organizationId: number | null;
 };

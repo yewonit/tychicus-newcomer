@@ -14,6 +14,7 @@ type NewcomerRow = {
   birthDate: string;
   phone: string;
   phoneUnknown: boolean;
+  email: string;
   organizationId: number | null;
   organizationName: string;
 };
@@ -30,6 +31,7 @@ function createRow(): NewcomerRow {
     birthDate: '',
     phone: '',
     phoneUnknown: false,
+    email: '',
     organizationId: null,
     organizationName: '',
   };
@@ -51,6 +53,10 @@ function isValidPhone(value: string): boolean {
   return /^\d{3}-\d{4}-\d{4}$/.test(value);
 }
 
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 /** 행에 사용자가 입력한 데이터가 하나라도 있는지 확인한다. */
 function hasData(row: NewcomerRow): boolean {
   return (
@@ -58,6 +64,7 @@ function hasData(row: NewcomerRow): boolean {
     row.gender !== '' ||
     row.birthDate !== '' ||
     row.phone !== '' ||
+    row.email !== '' ||
     row.organizationId !== null
   );
 }
@@ -69,6 +76,7 @@ const COLUMNS = [
   { key: 'gender', label: '성별', width: 'w-[90px]' },
   { key: 'birthDate', label: '생일', width: 'w-[150px]' },
   { key: 'phone', label: '핸드폰번호', width: 'w-[260px]' },
+  { key: 'email', label: '이메일', width: 'w-[200px]' },
   { key: 'organization', label: '소속', width: 'w-[170px]' },
 ] as const;
 
@@ -174,6 +182,10 @@ export function RegisterPage() {
         setSubmitError(`"${row.name}" 행의 핸드폰번호 형식이 올바르지 않습니다.`);
         return;
       }
+      if (row.email !== '' && !isValidEmail(row.email)) {
+        setSubmitError(`"${row.name}" 행의 이메일 형식이 올바르지 않습니다.`);
+        return;
+      }
     }
 
     const payload: NewcomerPayload[] = filledRows.map((r) => ({
@@ -181,6 +193,7 @@ export function RegisterPage() {
       gender: r.gender as 'M' | 'F',
       birthDate: r.birthDate,
       phone: r.phoneUnknown ? '' : r.phone,
+      email: r.email.trim() || null,
       organizationId: r.organizationId,
     }));
 
@@ -323,8 +336,19 @@ export function RegisterPage() {
                 </div>
               </div>
 
-              {/* 소속 */}
+              {/* 이메일 */}
               <div className={`${COLUMNS[4].width} shrink-0 px-1`}>
+                <input
+                  type="email"
+                  placeholder="email@example.com"
+                  value={row.email}
+                  onChange={(e) => updateRow(row.id, { email: e.target.value })}
+                  className="h-9 w-full rounded-md border border-gray-200 bg-white px-2.5 text-sm text-gray-700 placeholder:text-gray-300 focus:border-[#3d8b6e] focus:outline-none focus:ring-1 focus:ring-[#3d8b6e]/30"
+                />
+              </div>
+
+              {/* 소속 */}
+              <div className={`${COLUMNS[5].width} shrink-0 px-1`}>
                 <div className="flex items-center gap-1.5">
                   <span
                     className={`flex-1 truncate rounded-md border border-gray-200 px-2.5 py-[7px] text-sm ${

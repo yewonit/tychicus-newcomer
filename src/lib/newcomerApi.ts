@@ -5,6 +5,7 @@ export type NewcomerPayload = {
   gender: 'M' | 'F';
   birthDate: string;
   phone: string;
+  email: string | null;
   organizationId: number | null;
 };
 

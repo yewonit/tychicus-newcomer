@@ -54,5 +54,10 @@ export async function request<T>(opts: RequestOptions): Promise<T> {
     throw new Error(message ?? opts.fallbackError ?? '요청에 실패했습니다.');
   }
 
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  return JSON.parse(text) as T;
 }

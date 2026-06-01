@@ -51,6 +51,13 @@ function formatOrgName(name: string | null): string {
   return name ? name.replace(/_/g, ' ') : '';
 }
 
+/** API 생일 문자열(ISO 8601 등)을 yyyy-mm-dd 형식으로 정규화한다. */
+function formatBirthDate(raw: string | null): string {
+  if (!raw) return '';
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : raw;
+}
+
 export type UpdateMemberPayload = {
   name: string;
   gender: 'M' | 'F';
@@ -81,7 +88,7 @@ export async function fetchNewMembers(): Promise<NewMember[]> {
     userId: m.userId,
     name: m.name,
     gender: formatGender(m.gender),
-    birthDate: m.birthDate ?? '',
+    birthDate: formatBirthDate(m.birthDate),
     phoneNumber: formatPhone(m.phoneNumber),
     organizationId: m.organizationId,
     organizationName: formatOrgName(m.organizationName),
